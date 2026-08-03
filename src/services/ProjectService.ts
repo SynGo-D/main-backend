@@ -33,4 +33,107 @@ export class ProjectService {
         );
     }
 
+
+
+    /**
+     * Retrieves all projects.
+     */
+    async getProjects(): Promise<Project[]> {
+
+        return this.repository.findAll();
+
+    }
+
+
+
+
+    /**
+     * Retrieves a project by ID.
+     */
+    async getProject(
+        id:string
+    ): Promise<Project> {
+
+
+        const project =
+            await this.repository.findById(id);
+
+
+
+        if(!project){
+
+            throw new ValidationError(
+                "Project not found."
+            );
+
+        }
+
+
+        return project;
+
+    }
+
+
+
+
+
+    /**
+     * Deletes a project by ID.
+     */
+    async deleteProject(
+        id:string
+    ): Promise<Project> {
+
+
+        const project =
+            await this.repository.delete(id);
+
+
+
+        if(!project){
+
+            throw new ValidationError(
+                "Project not found."
+            );
+
+        }
+
+
+        return project;
+
+    }
+
+
+    /**
+     * Updates an existing project.
+     */
+    async updateProject(
+        id: string,
+        name: string,
+        description: string | null
+    ): Promise<Project> {
+
+        name = name.trim();
+
+        if (!name) {
+            throw new ValidationError(
+                "Project name is required."
+            );
+        }
+
+        const project = await this.repository.update(
+            id,
+            name,
+            description
+        );
+
+        if (!project) {
+            throw new ValidationError(
+                "Project not found."
+            );
+        }
+
+        return project;
+
+    }
 }

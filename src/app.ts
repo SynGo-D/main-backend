@@ -68,7 +68,7 @@ app.use(
 
     Used to verify that the service is alive.
 */
-app.get("/health", (req, res)=>{
+app.get("/health", (_req, res)=>{
 
     res.status(200).json({
         status:"UP",

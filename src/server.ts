@@ -2,17 +2,16 @@ import app from "./app";
 import { env } from "./config/env";
 import { pool } from "./database";
 
-
-async function startServer(){
+async function startServer(): Promise<void> {
 
     try {
 
+        // Verify database connection before accepting requests.
         await pool.query("SELECT 1");
 
         console.log("Database connected");
 
-
-        app.listen(env.port, ()=>{
+        const server = app.listen(env.port, () => {
 
             console.log(
                 `Server running on port ${env.port}`
@@ -20,8 +19,18 @@ async function startServer(){
 
         });
 
+        server.on("error", (error) => {
 
-    } catch(error){
+            console.error(
+                "HTTP server error",
+                error
+            );
+
+            process.exit(1);
+
+        });
+
+    } catch (error) {
 
         console.error(
             "Failed to start server",
@@ -34,5 +43,4 @@ async function startServer(){
 
 }
 
-
-startServer();
+void startServer();
