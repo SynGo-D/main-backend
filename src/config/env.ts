@@ -28,6 +28,22 @@ export const env = { //creates an object called .env
         name: requiredEnv("DATABASE_NAME"),
         user: requiredEnv("DATABASE_USER"),
         password: requiredEnv("DATABASE_PASSWORD")
-    }
+    },
+
+    // -----------------------------------------------------------------------
+    // Downstream microservices — main-backend is the only thing web-interface
+    // talks to; everything else (integration-service, analysis-engine) is
+    // reached only from here, server-to-server.
+    // -----------------------------------------------------------------------
+    integrationServiceUrl: process.env.INTEGRATION_SERVICE_URL ?? "http://localhost:5001",
+    analysisEngineUrl: process.env.ANALYSIS_ENGINE_URL ?? "http://localhost:8000",
+
+    // Origin allowed to call this API — the browser-facing frontend.
+    frontendOrigin: process.env.FRONTEND_ORIGIN ?? "http://localhost:3000",
+
+    // Signs/verifies session tokens issued at login. Required, not
+    // defaulted — an app booting with a made-up secret would silently
+    // accept tokens signed by any other instance using the same default.
+    jwtSecret: requiredEnv("JWT_SECRET")
 
 };
