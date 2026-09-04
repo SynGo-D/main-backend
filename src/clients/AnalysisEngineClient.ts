@@ -35,14 +35,77 @@ export interface Finding {
     tool: string;
 }
 
+/*
+Mirrors analysis-engine's domain/metrics.py exactly (field-for-field, same
+snake_case) — this client only forwards what analysis-engine already
+computed, it never recalculates a density/average/violation count itself.
+*/
+export interface ComplexityMetrics {
+    violations: number;
+    maximum: number | null;
+    average: number | null;
+}
+
+export interface CognitiveComplexityMetrics {
+    violations: number;
+    maximum: number | null;
+    average: number | null;
+}
+
+export interface SizeMetrics {
+    largest_file_lines: number;
+    largest_function_lines: number | null;
+    max_lines_violations: number;
+    max_lines_per_function_violations: number;
+}
+
+export interface UnusedCodeMetrics {
+    unused_variables: number;
+    unreachable_code: number;
+}
+
+export interface AnalysisMetrics {
+    files_analyzed: number;
+    loc: number;
+    errors: number;
+    warnings: number;
+    total_issues: number;
+    error_density: number;
+    warning_density: number;
+    issue_density: number;
+    complexity: ComplexityMetrics;
+    cognitive_complexity: CognitiveComplexityMetrics;
+    size: SizeMetrics;
+    unused_code: UnusedCodeMetrics;
+}
+
+export interface RuleStatistic {
+    rule_id: string;
+    count: number;
+    errors: number;
+    warnings: number;
+}
+
+export interface FileStatistic {
+    file_path: string;
+    loc: number;
+    errors: number;
+    warnings: number;
+    issues: number;
+}
+
 export interface AnalysisResult {
     result_id: string;
     job_id: string;
     repository: string;
     pull_request_number: number;
     commit_sha: string;
+    branch: string;
     status: "completed" | "failed";
     findings: Finding[];
+    metrics: AnalysisMetrics;
+    rule_statistics: RuleStatistic[];
+    file_statistics: FileStatistic[];
     started_at: string;
     completed_at: string | null;
     error_message: string | null;
