@@ -8,6 +8,9 @@ import { requireAuth } from "../middleware/requireAuth";
  *   GET /api/repositories/preview?url=...                                    (public)
  *   GET /api/repositories/:owner/:repo/analysis                              (requireAuth)
  *   GET /api/repositories/:owner/:repo/analysis/pull-requests/:number        (requireAuth)
+ *   GET, POST          /api/repositories/:owner/:repo/rules                  (requireAuth)
+ *   PATCH, DELETE      /api/repositories/:owner/:repo/rules/:ruleId          (requireAuth)
+ *   POST               /api/repositories/:owner/:repo/rules/suggest          (requireAuth)
  *
  * requireAuth is applied per-route, not via router.use(), because /preview
  * is deliberately public — see RepositoryGatewayController.preview.
@@ -32,6 +35,13 @@ export function createRepositoryGatewayRoutes(controller: RepositoryGatewayContr
         requireAuth,
         (req, res) => controller.getPullRequestAnalysis(req, res)
     );
+
+    router.get("/:owner/:repo/rules", requireAuth, (req, res) => controller.listRules(req, res));
+    router.post("/:owner/:repo/rules", requireAuth, (req, res) => controller.addRule(req, res));
+    // Before the /:ruleId routes, so "suggest" isn't read as a rule id.
+    router.post("/:owner/:repo/rules/suggest", requireAuth, (req, res) => controller.suggestRules(req, res));
+    router.patch("/:owner/:repo/rules/:ruleId", requireAuth, (req, res) => controller.changeRule(req, res));
+    router.delete("/:owner/:repo/rules/:ruleId", requireAuth, (req, res) => controller.deleteRule(req, res));
 
     return router;
 }

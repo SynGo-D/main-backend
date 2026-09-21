@@ -8,19 +8,53 @@ IntegrationServiceClient, analysis-engine returns bare JSON already (no
 exists purely to keep "which service, which URL" out of the controllers.
 */
 
-async function request<T>(path: string): Promise<T> {
+async function request<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
 
-    const response = await fetch(`${env.analysisEngineUrl}${path}`);
+    const response = await fetch(`${env.analysisEngineUrl}${path}`, {
+        method: init.method ?? "GET",
+        headers: init.body === undefined ? undefined : { "Content-Type": "application/json" },
+        body: init.body === undefined ? undefined : JSON.stringify(init.body),
+    });
 
     if (!response.ok) {
         const body = await response.json().catch(() => ({}));
-        throw new UpstreamServiceError(
-            body.detail ?? "analysis-engine request failed.",
-            response.status
-        );
+        throw new UpstreamServiceError(detailMessage(body.detail), response.status);
     }
 
+    if (response.status === 204) {
+        return undefined as T;
+    }
     return response.json() as Promise<T>;
+}
+
+/*
+FastAPI's `detail` is a string for errors the engine raises itself, and a
+list of {loc, msg} objects when request validation fails (422).
+*/
+function detailMessage(detail: unknown): string {
+    if (typeof detail === "string") {
+        return detail;
+    }
+    if (Array.isArray(detail) && detail.length > 0 && typeof detail[0]?.msg === "string") {
+        return detail[0].msg;
+    }
+    return "analysis-engine request failed.";
+}
+
+function repoPath(owner: string, repo: string): string {
+    return `/api/repositories/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
+}
+
+/* Mirrors analysis-engine's domain/business_rule.py. */
+export interface BusinessRule {
+    rule_id: string;
+    rule: string;
+    applies_to: string[];
+    severity: "high" | "medium" | "low";
+    rationale: string | null;
+    source: "repository_file" | "dashboard" | "suggested";
+    status: "active" | "suggested" | "rejected";
+    evidence: string | null;
 }
 
 export interface Finding {
@@ -121,6 +155,26 @@ export class AnalysisEngineClient {
         return request(
             `/api/repositories/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/analysis?limit=${limit}`
         );
+    }
+
+    listRules(owner: string, repo: string): Promise<{ repository: string; rules: BusinessRule[]; mining: boolean }> {
+        return request(`${repoPath(owner, repo)}/rules`);
+    }
+
+    addRule(owner: string, repo: string, rule: unknown): Promise<BusinessRule> {
+        return request(`${repoPath(owner, repo)}/rules`, { method: "POST", body: rule });
+    }
+
+    changeRule(owner: string, repo: string, ruleId: string, change: unknown): Promise<BusinessRule> {
+        return request(`${repoPath(owner, repo)}/rules/${encodeURIComponent(ruleId)}`, { method: "PATCH", body: change });
+    }
+
+    deleteRule(owner: string, repo: string, ruleId: string): Promise<void> {
+        return request(`${repoPath(owner, repo)}/rules/${encodeURIComponent(ruleId)}`, { method: "DELETE" });
+    }
+
+    suggestRules(owner: string, repo: string, options: unknown): Promise<{ status: string }> {
+        return request(`${repoPath(owner, repo)}/rules/suggest`, { method: "POST", body: options });
     }
 
     getPullRequestAnalysis(
