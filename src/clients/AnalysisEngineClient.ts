@@ -8,11 +8,20 @@ IntegrationServiceClient, analysis-engine returns bare JSON already (no
 exists purely to keep "which service, which URL" out of the controllers.
 */
 
-async function request<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+async function request<T>(
+    path: string,
+    init: { method?: string; body?: unknown; userId?: string } = {}
+): Promise<T> {
+
+    const headers: Record<string, string> = {};
+    if (init.body !== undefined) headers["Content-Type"] = "application/json";
+    // Who is asking, from main-backend's verified session. analysis-engine
+    // trusts this header because only main-backend can reach it.
+    if (init.userId) headers["X-User-Id"] = init.userId;
 
     const response = await fetch(`${env.analysisEngineUrl}${path}`, {
         method: init.method ?? "GET",
-        headers: init.body === undefined ? undefined : { "Content-Type": "application/json" },
+        headers,
         body: init.body === undefined ? undefined : JSON.stringify(init.body),
     });
 
@@ -180,11 +189,31 @@ export class AnalysisEngineClient {
     getPullRequestAnalysis(
         owner: string,
         repo: string,
-        pullRequestNumber: number
+        pullRequestNumber: number,
+        userId?: string
     ): Promise<AnalysisResult> {
         return request(
-            `/api/repositories/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/analysis/pull-requests/${pullRequestNumber}`
+            `/api/repositories/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/analysis/pull-requests/${pullRequestNumber}`,
+            { userId }
         );
+    }
+
+    giveFeedback(
+        owner: string,
+        repo: string,
+        pullRequestNumber: number,
+        fingerprint: string,
+        userId: string,
+        feedback: unknown
+    ): Promise<void> {
+        return request(
+            `${repoPath(owner, repo)}/analysis/pull-requests/${pullRequestNumber}/review/findings/${encodeURIComponent(fingerprint)}/feedback`,
+            { method: "PUT", body: feedback, userId }
+        );
+    }
+
+    reviewUsage(owner: string, repo: string, days: number): Promise<unknown> {
+        return request(`${repoPath(owner, repo)}/review-usage?days=${days}`);
     }
 
 }

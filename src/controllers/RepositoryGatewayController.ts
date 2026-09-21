@@ -63,7 +63,8 @@ export class RepositoryGatewayController {
             const result = await this.analysisEngineClient.getPullRequestAnalysis(
                 owner,
                 repo,
-                Number(number)
+                Number(number),
+                sessionUserId(req)
             );
             res.status(200).json(result);
 
@@ -125,6 +126,36 @@ export class RepositoryGatewayController {
         }
     };
 
+    /*
+    AI review feedback. The user id is taken from the verified session
+    (requireAuth), never from the request body, so nobody can rate issues
+    as someone else.
+    */
+    giveFeedback = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { owner, repo, number, fingerprint } = params(req, "owner", "repo", "number", "fingerprint");
+            const userId = sessionUserId(req);
+            if (!userId) {
+                res.status(401).json({ message: "Sign in to give feedback." });
+                return;
+            }
+            await this.analysisEngineClient.giveFeedback(owner, repo, Number(number), fingerprint, userId, req.body);
+            res.status(204).end();
+        } catch (error) {
+            this.handleError(res, error);
+        }
+    };
+
+    reviewUsage = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { owner, repo } = params(req, "owner", "repo");
+            const days = req.query.days ? Number(req.query.days) : 30;
+            res.status(200).json(await this.analysisEngineClient.reviewUsage(owner, repo, days));
+        } catch (error) {
+            this.handleError(res, error);
+        }
+    };
+
     private handleError(res: Response, error: unknown): void {
 
         if (error instanceof ValidationError) {
@@ -159,4 +190,10 @@ function params<K extends string>(req: Request, ...names: K[]): Record<K, string
         result[name] = value;
     }
     return result;
+}
+
+/* The user requireAuth verified; undefined on routes without it. */
+function sessionUserId(req: Request): string | undefined {
+    const userId = (req as Request & { userId?: unknown }).userId;
+    return typeof userId === "string" && userId ? userId : undefined;
 }
