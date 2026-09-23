@@ -3,9 +3,6 @@ import cors from "cors";
 
 import { env } from "./config/env";
 
-import { ProjectRepository } from "./repositories/ProjectRepository";
-import { ProjectService } from "./services/ProjectService";
-import { ProjectController } from "./controllers/ProjectController";
 
 import { IntegrationServiceClient, OrganizationServiceClient } from "./clients/IntegrationServiceClient";
 import { OrganizationGatewayController } from "./controllers/OrganizationGatewayController";
@@ -15,7 +12,6 @@ import { AuthController } from "./controllers/AuthController";
 import { IntegrationGatewayController } from "./controllers/IntegrationGatewayController";
 import { RepositoryGatewayController } from "./controllers/RepositoryGatewayController";
 
-import { createProjectRoutes } from "./routes/projectRoutes";
 import { createAuthRoutes } from "./routes/authRoutes";
 import { createIntegrationGatewayRoutes } from "./routes/integrationGatewayRoutes";
 import { createRepositoryGatewayRoutes } from "./routes/repositoryGatewayRoutes";
@@ -54,15 +50,8 @@ app.use(express.json());
           ▼
     Controller
 */
-const projectRepository = new ProjectRepository();
 
-const projectService = new ProjectService(
-    projectRepository
-);
 
-const projectController = new ProjectController(
-    projectService
-);
 
 const integrationServiceClient = new IntegrationServiceClient();
 const organizationServiceClient = new OrganizationServiceClient();
@@ -88,7 +77,6 @@ const repositoryGatewayController = new RepositoryGatewayController(
 
     Final URLs:
 
-    POST   /api/projects
     POST   /api/auth/login
     GET    /api/repositories/preview
     GET    /api/repositories/:owner/:repo/analysis
@@ -98,10 +86,6 @@ const repositoryGatewayController = new RepositoryGatewayController(
     GET    /api/integrations/:id
     DELETE /api/integrations/:id
 */
-app.use(
-    "/api/projects",
-    createProjectRoutes(projectController)
-);
 
 app.use(
     "/api/auth",
@@ -119,9 +103,8 @@ app.use(
 );
 
 /*
-Multi-tenancy. The older /api/projects above is an unrelated early CRUD
-demo on main-backend's own database; these are the organization's real
-projects, owned by integration-service alongside users and repositories.
+Projects belong to an organization and are owned by integration-service,
+alongside users and repositories.
 */
 app.use(
     "/api/organizations",

@@ -19,16 +19,10 @@ function requiredEnv(key: string): string {
 // exported object that stores your application's configuration values from environment
 export const env = { //creates an object called .env
 
-    //reads environmental variables (PORT, DATABASE_HOST, DATABASE_PORT, DATABASE_NAME, DATABASE_USER, DATABASE_PASSWORD) and assigns them to the corresponding properties in the env object. If any required variable is missing, it will throw an error due to the requiredEnv function.
+    // Reads each variable once, here, and fails fast if a required one
+    // is missing rather than discovering it on the first request.
     port: Number(process.env.PORT) || 5000,
 
-    database: {
-        host: requiredEnv("DATABASE_HOST"),         //validates required values using requiredEnv()
-        port: Number(requiredEnv("DATABASE_PORT")),  //converts some values from strings to numbers using Number()
-        name: requiredEnv("DATABASE_NAME"),
-        user: requiredEnv("DATABASE_USER"),
-        password: requiredEnv("DATABASE_PASSWORD")
-    },
 
     // -----------------------------------------------------------------------
     // Downstream microservices — main-backend is the only thing web-interface

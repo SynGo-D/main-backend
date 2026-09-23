@@ -1,15 +1,9 @@
 import app from "./app";
 import { env } from "./config/env";
-import { pool } from "./database";
 
 async function startServer(): Promise<void> {
 
     try {
-
-        // Verify database connection before accepting requests.
-        await pool.query("SELECT 1");
-
-        console.log("Database connected");
 
         const server = app.listen(env.port, () => {
 
