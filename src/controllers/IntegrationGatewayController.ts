@@ -71,7 +71,7 @@ export class IntegrationGatewayController {
 
         try {
 
-            const integration = await this.integrationServiceClient.getIntegration(req.params.id);
+            const integration = await this.integrationServiceClient.getIntegration(String(req.params.id));
 
             if (integration.userId !== req.userId) {
                 res.status(404).json({ message: "Integration not found." });
@@ -90,14 +90,14 @@ export class IntegrationGatewayController {
 
         try {
 
-            const integration = await this.integrationServiceClient.getIntegration(req.params.id);
+            const integration = await this.integrationServiceClient.getIntegration(String(req.params.id));
 
             if (integration.userId !== req.userId) {
                 res.status(404).json({ message: "Integration not found." });
                 return;
             }
 
-            await this.integrationServiceClient.revokeIntegration(req.params.id);
+            await this.integrationServiceClient.revokeIntegration(String(req.params.id));
 
             res.status(200).json({ message: "Integration revoked successfully." });
 

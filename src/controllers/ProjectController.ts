@@ -59,7 +59,7 @@ export class ProjectController {
      * Returns all projects.
      */
     async getProjects(
-        req: Request<{id:string}>,
+        req: Request,
         res: Response
     ): Promise<void> {
 

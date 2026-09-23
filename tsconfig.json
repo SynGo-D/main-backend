@@ -7,14 +7,14 @@
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "CommonJS",
+    "module": "NodeNext",
     "target": "ES2022",
     //"types": [],
     // For nodejs:
     // "lib": ["esnext"],
     // "types": ["node"],
     // and npm install -D @types/node
-    "moduleResolution": "node",
+    "moduleResolution": "NodeNext",
     "resolveJsonModule": true,
 
 
@@ -44,7 +44,8 @@
     //"noUncheckedSideEffectImports": true,
     //"moduleDetection": "force",
     "skipLibCheck": true,
-    "esModuleInterop": true, //instead of more verbose CommonJS interlop patterns
+    "esModuleInterop": true //instead of more verbose CommonJS interlop patterns
+  },
 
-  }
+  "include": ["src"]
 }
