@@ -156,6 +156,15 @@ export class RepositoryGatewayController {
         }
     };
 
+    contributors = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { owner, repo } = params(req, "owner", "repo");
+            res.status(200).json(await this.analysisEngineClient.contributors(owner, repo));
+        } catch (error) {
+            this.handleError(res, error);
+        }
+    };
+
     private handleError(res: Response, error: unknown): void {
 
         if (error instanceof ValidationError) {

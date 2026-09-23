@@ -8,6 +8,7 @@ import { requireAuth } from "../middleware/requireAuth";
  *   GET /api/repositories/preview?url=...                                    (public)
  *   GET /api/repositories/:owner/:repo/analysis                              (requireAuth)
  *   GET /api/repositories/:owner/:repo/analysis/pull-requests/:number        (requireAuth)
+ *   GET /api/repositories/:owner/:repo/contributors                          (requireAuth)
  *   GET, POST          /api/repositories/:owner/:repo/rules                  (requireAuth)
  *   PATCH, DELETE      /api/repositories/:owner/:repo/rules/:ruleId          (requireAuth)
  *   POST               /api/repositories/:owner/:repo/rules/suggest          (requireAuth)
@@ -37,6 +38,8 @@ export function createRepositoryGatewayRoutes(controller: RepositoryGatewayContr
         requireAuth,
         (req, res) => controller.getPullRequestAnalysis(req, res)
     );
+
+    router.get("/:owner/:repo/contributors", requireAuth, (req, res) => controller.contributors(req, res));
 
     router.get("/:owner/:repo/rules", requireAuth, (req, res) => controller.listRules(req, res));
     router.post("/:owner/:repo/rules", requireAuth, (req, res) => controller.addRule(req, res));

@@ -216,4 +216,8 @@ export class AnalysisEngineClient {
         return request(`${repoPath(owner, repo)}/review-usage?days=${days}`);
     }
 
+    contributors(owner: string, repo: string): Promise<unknown> {
+        return request(`${repoPath(owner, repo)}/contributors`);
+    }
+
 }
