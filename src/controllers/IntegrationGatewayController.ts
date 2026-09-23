@@ -23,15 +23,22 @@ export class IntegrationGatewayController {
 
         try {
 
-            const { repositoryUrl } = req.body as { repositoryUrl?: string };
+            const { repositoryUrl, organizationId, projectId } = req.body as {
+                repositoryUrl?: string; organizationId?: string; projectId?: string | null;
+            };
 
             if (!repositoryUrl) {
                 throw new ValidationError("repositoryUrl is required.");
             }
+            if (!organizationId) {
+                throw new ValidationError("organizationId is required: a repository belongs to an organization.");
+            }
 
             const result = await this.integrationServiceClient.authorizeIntegration(
                 req.userId!,
-                repositoryUrl
+                repositoryUrl,
+                organizationId,
+                projectId ?? null
             );
 
             res.status(200).json(result);
@@ -46,7 +53,12 @@ export class IntegrationGatewayController {
 
         try {
 
-            const integrations = await this.integrationServiceClient.listIntegrations(req.userId!);
+            const organizationId = typeof req.query.organizationId === "string" ? req.query.organizationId : undefined;
+            const projectId = typeof req.query.projectId === "string" ? req.query.projectId : undefined;
+
+            const integrations = await this.integrationServiceClient.listIntegrations(
+                req.userId!, organizationId, projectId
+            );
             res.status(200).json(integrations);
 
         } catch (error) {

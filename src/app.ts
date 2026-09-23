@@ -7,7 +7,9 @@ import { ProjectRepository } from "./repositories/ProjectRepository";
 import { ProjectService } from "./services/ProjectService";
 import { ProjectController } from "./controllers/ProjectController";
 
-import { IntegrationServiceClient } from "./clients/IntegrationServiceClient";
+import { IntegrationServiceClient, OrganizationServiceClient } from "./clients/IntegrationServiceClient";
+import { OrganizationGatewayController } from "./controllers/OrganizationGatewayController";
+import { createOrganizationGatewayRoutes } from "./routes/organizationGatewayRoutes";
 import { AnalysisEngineClient } from "./clients/AnalysisEngineClient";
 import { AuthController } from "./controllers/AuthController";
 import { IntegrationGatewayController } from "./controllers/IntegrationGatewayController";
@@ -63,6 +65,7 @@ const projectController = new ProjectController(
 );
 
 const integrationServiceClient = new IntegrationServiceClient();
+const organizationServiceClient = new OrganizationServiceClient();
 const analysisEngineClient = new AnalysisEngineClient();
 
 const authController = new AuthController(
@@ -113,6 +116,16 @@ app.use(
 app.use(
     "/api/integrations",
     createIntegrationGatewayRoutes(integrationGatewayController)
+);
+
+/*
+Multi-tenancy. The older /api/projects above is an unrelated early CRUD
+demo on main-backend's own database; these are the organization's real
+projects, owned by integration-service alongside users and repositories.
+*/
+app.use(
+    "/api/organizations",
+    createOrganizationGatewayRoutes(new OrganizationGatewayController(organizationServiceClient))
 );
 
 

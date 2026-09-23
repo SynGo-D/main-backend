@@ -11,5 +11,11 @@ export function createAuthRoutes(authController: AuthController) {
         (req, res) => authController.login(req, res)
     );
 
+    // POST /api/auth/register
+    router.post(
+        "/register",
+        (req, res) => authController.register(req, res)
+    );
+
     return router;
 }
