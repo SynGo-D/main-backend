@@ -94,7 +94,7 @@ app.use(
 
 app.use(
     "/api/repositories",
-    createRepositoryGatewayRoutes(repositoryGatewayController)
+    createRepositoryGatewayRoutes(repositoryGatewayController, integrationServiceClient)
 );
 
 app.use(

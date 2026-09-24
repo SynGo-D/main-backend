@@ -85,6 +85,27 @@ export interface Integration {
 export class IntegrationServiceClient {
 
     /**
+     * Whether this user belongs to an organization that has connected
+     * this repository. 404 from integration-service means "no", which is
+     * an answer rather than a failure — hence the explicit status check
+     * instead of letting `request` throw.
+     */
+    async canAccessRepository(userId: string, owner: string, repo: string): Promise<boolean> {
+        const query = new URLSearchParams({ owner, repo, provider: "github" });
+
+        const response = await fetch(
+            `${env.integrationServiceUrl}/api/integrations/access?${query}`,
+            { headers: { "Content-Type": "application/json", "X-User-Id": userId } }
+        );
+
+        if (response.status === 404) return false;
+        if (!response.ok) {
+            throw new UpstreamServiceError("integration-service access check failed.", response.status);
+        }
+        return true;
+    }
+
+    /**
      * Creates an account, or claims one an admin added by email but nobody
      * has set a password on yet.
      */
