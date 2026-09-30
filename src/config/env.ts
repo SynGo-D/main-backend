@@ -31,6 +31,7 @@ export const env = { //creates an object called .env
     // -----------------------------------------------------------------------
     integrationServiceUrl: process.env.INTEGRATION_SERVICE_URL ?? "http://localhost:5001",
     analysisEngineUrl: process.env.ANALYSIS_ENGINE_URL ?? "http://localhost:8000",
+    technicalDebtServiceUrl: process.env.TECH_DEBT_SERVICE_URL ?? "http://localhost:5003",
 
     // Origin allowed to call this API — the browser-facing frontend.
     frontendOrigin: process.env.FRONTEND_ORIGIN ?? "http://localhost:3000",

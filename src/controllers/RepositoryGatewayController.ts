@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { IntegrationServiceClient } from "../clients/IntegrationServiceClient";
 import { AnalysisEngineClient } from "../clients/AnalysisEngineClient";
+import { TechnicalDebtServiceClient } from "../clients/TechnicalDebtServiceClient";
 import { UpstreamServiceError } from "../errors/UpstreamServiceError";
 import { ValidationError } from "../errors/ValidationError";
 
@@ -8,7 +9,8 @@ export class RepositoryGatewayController {
 
     constructor(
         private readonly integrationServiceClient: IntegrationServiceClient,
-        private readonly analysisEngineClient: AnalysisEngineClient
+        private readonly analysisEngineClient: AnalysisEngineClient,
+        private readonly technicalDebtServiceClient: TechnicalDebtServiceClient
     ) {}
 
     /**
@@ -160,6 +162,65 @@ export class RepositoryGatewayController {
         try {
             const { owner, repo } = params(req, "owner", "repo");
             res.status(200).json(await this.analysisEngineClient.contributors(owner, repo));
+        } catch (error) {
+            this.handleError(res, error);
+        }
+    };
+
+    /*
+    The debt routes below reach technical-debt-service, which has no
+    authentication of its own. They are safe only because every one of them
+    sits under this router's requireAuth + requireRepositoryAccess — the
+    browser can no longer reach that service directly at all.
+    */
+
+    debtSummary = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { owner, repo } = params(req, "owner", "repo");
+            res.status(200).json(
+                await this.technicalDebtServiceClient.getSummary(owner, repo, sessionUserId(req))
+            );
+        } catch (error) {
+            this.handleError(res, error);
+        }
+    };
+
+    listDebtReviews = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { owner, repo } = params(req, "owner", "repo");
+            const limit = req.query.limit ? Number(req.query.limit) : undefined;
+            res.status(200).json(
+                await this.technicalDebtServiceClient.listReviews(
+                    owner, repo, limit, sessionUserId(req)
+                )
+            );
+        } catch (error) {
+            this.handleError(res, error);
+        }
+    };
+
+    pullRequestDebt = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { owner, repo, number } = params(req, "owner", "repo", "number");
+            res.status(200).json(
+                await this.technicalDebtServiceClient.getPullRequestDebt(
+                    owner, repo, Number(number), sessionUserId(req)
+                )
+            );
+        } catch (error) {
+            this.handleError(res, error);
+        }
+    };
+
+    /* Spends money — two LLM calls per finding. */
+    calculatePullRequestDebt = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { owner, repo, number } = params(req, "owner", "repo", "number");
+            res.status(200).json(
+                await this.technicalDebtServiceClient.calculatePullRequestDebt(
+                    owner, repo, Number(number), sessionUserId(req)
+                )
+            );
         } catch (error) {
             this.handleError(res, error);
         }

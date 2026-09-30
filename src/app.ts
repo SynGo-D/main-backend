@@ -8,6 +8,7 @@ import { IntegrationServiceClient, OrganizationServiceClient } from "./clients/I
 import { OrganizationGatewayController } from "./controllers/OrganizationGatewayController";
 import { createOrganizationGatewayRoutes } from "./routes/organizationGatewayRoutes";
 import { AnalysisEngineClient } from "./clients/AnalysisEngineClient";
+import { TechnicalDebtServiceClient } from "./clients/TechnicalDebtServiceClient";
 import { AuthController } from "./controllers/AuthController";
 import { IntegrationGatewayController } from "./controllers/IntegrationGatewayController";
 import { RepositoryGatewayController } from "./controllers/RepositoryGatewayController";
@@ -56,6 +57,7 @@ app.use(express.json());
 const integrationServiceClient = new IntegrationServiceClient();
 const organizationServiceClient = new OrganizationServiceClient();
 const analysisEngineClient = new AnalysisEngineClient();
+const technicalDebtServiceClient = new TechnicalDebtServiceClient();
 
 const authController = new AuthController(
     integrationServiceClient
@@ -67,7 +69,8 @@ const integrationGatewayController = new IntegrationGatewayController(
 
 const repositoryGatewayController = new RepositoryGatewayController(
     integrationServiceClient,
-    analysisEngineClient
+    analysisEngineClient,
+    technicalDebtServiceClient
 );
 
 
