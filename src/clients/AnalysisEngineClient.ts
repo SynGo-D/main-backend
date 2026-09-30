@@ -66,6 +66,27 @@ export interface BusinessRule {
     evidence: string | null;
 }
 
+/* Mirrors analysis-engine's api/contributors.py. */
+export interface ContributorDebt {
+    score: number | null;
+    status: "pending" | "available";
+    introduced_at: string | null;
+}
+
+export interface Contributor {
+    username: string;
+    pull_request_numbers: number[];
+    debt: ContributorDebt;
+    last_analysis_at: string | null;
+    [key: string]: unknown;
+}
+
+export interface ContributorsResponse {
+    repository: string;
+    contributors: Contributor[];
+    debt_source: string;
+}
+
 export interface Finding {
     finding_id: string;
     file_path: string;
@@ -216,7 +237,7 @@ export class AnalysisEngineClient {
         return request(`${repoPath(owner, repo)}/review-usage?days=${days}`);
     }
 
-    contributors(owner: string, repo: string): Promise<unknown> {
+    contributors(owner: string, repo: string): Promise<ContributorsResponse> {
         return request(`${repoPath(owner, repo)}/contributors`);
     }
 

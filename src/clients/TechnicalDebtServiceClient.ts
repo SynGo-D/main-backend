@@ -58,11 +58,48 @@ function debtPath(owner: string, repo: string, suffix = ""): string {
     return `/api/repositories/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/debt${suffix}`;
 }
 
+/*
+The part of technical-debt-service's summary this gateway reads. `debt_ratio`
+and the rest are forwarded untouched to the dashboard; only these fields are
+needed to attribute debt to the person who opened the pull request.
+*/
+export interface DebtReviewSummary {
+    pull_request_number: number;
+    total_debt_minutes: number;
+    created_at: string;
+}
+
+export interface DebtSummary {
+    pull_requests?: DebtReviewSummary[];
+}
+
 export class TechnicalDebtServiceClient {
 
     /* Every figure on the debt dashboard, for one repository. */
     async getSummary(owner: string, repo: string, userId?: string): Promise<unknown> {
         return request(debtPath(owner, repo, "/summary"), { userId });
+    }
+
+    /*
+    The same summary, typed for the contributors join, and null rather than
+    throwing when there is none.
+
+    A repository whose debt has never been calculated answers 404, and that
+    is not an error on the contributors page — it means "not measured yet",
+    which is exactly what the page already knows how to show. Any other
+    failure is also swallowed: contributors is a page about pull requests
+    and lines, and it should not go blank because a second service is down.
+    */
+    async getSummaryForAttribution(
+        owner: string,
+        repo: string,
+        userId?: string
+    ): Promise<DebtSummary | null> {
+        try {
+            return await request<DebtSummary>(debtPath(owner, repo, "/summary"), { userId });
+        } catch {
+            return null;
+        }
     }
 
     async listReviews(

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { IntegrationServiceClient } from "../clients/IntegrationServiceClient";
-import { AnalysisEngineClient } from "../clients/AnalysisEngineClient";
-import { TechnicalDebtServiceClient } from "../clients/TechnicalDebtServiceClient";
+import { AnalysisEngineClient, ContributorsResponse } from "../clients/AnalysisEngineClient";
+import { DebtSummary, TechnicalDebtServiceClient } from "../clients/TechnicalDebtServiceClient";
 import { UpstreamServiceError } from "../errors/UpstreamServiceError";
 import { ValidationError } from "../errors/ValidationError";
 
@@ -161,7 +161,16 @@ export class RepositoryGatewayController {
     contributors = async (req: Request, res: Response): Promise<void> => {
         try {
             const { owner, repo } = params(req, "owner", "repo");
-            res.status(200).json(await this.analysisEngineClient.contributors(owner, repo));
+            const userId = sessionUserId(req);
+
+            // Fetched together: neither depends on the other, and the
+            // contributors page waits for both before it renders anything.
+            const [contributors, debt] = await Promise.all([
+                this.analysisEngineClient.contributors(owner, repo),
+                this.technicalDebtServiceClient.getSummaryForAttribution(owner, repo, userId),
+            ]);
+
+            res.status(200).json(attributeDebt(contributors, debt));
         } catch (error) {
             this.handleError(res, error);
         }
@@ -250,6 +259,81 @@ Route parameters as plain strings. Express 5 types each one as
 string | string[]; the routes here never repeat a parameter, so an array
 would only mean a malformed request.
 */
+/*
+Attaches each person's share of the repository's technical debt.
+
+analysis-engine knows who opened which pull request; technical-debt-service
+knows what each pull request cost. Neither can answer "how much debt did
+this person introduce" alone, and neither should: analysis-engine has no
+access to the debt database, and giving it one would make the two services
+circular. This gateway already calls both, so the join belongs here.
+
+Attribution is by pull request, using the latest debt review of each — the
+same basis the contributors figures already use, where a pull request
+pushed to three times counts once rather than three times.
+
+A contributor whose pull requests have no debt review yet keeps
+status "pending", which the page renders as "Pending" rather than as zero.
+That distinction is the point: nobody should read "not measured" as "clean".
+*/
+function attributeDebt(
+    response: ContributorsResponse,
+    debt: DebtSummary | null
+): ContributorsResponse {
+
+    const reviews = debt?.pull_requests ?? [];
+
+    if (reviews.length === 0) {
+        return response;
+    }
+
+    // Latest review per pull request. The summary already returns them
+    // newest first, but relying on that silently would break the moment it
+    // changed, and the comparison is cheap.
+    const minutesByPullRequest = new Map<number, { minutes: number; at: string }>();
+    for (const review of reviews) {
+        const existing = minutesByPullRequest.get(review.pull_request_number);
+        if (!existing || review.created_at > existing.at) {
+            minutesByPullRequest.set(review.pull_request_number, {
+                minutes: review.total_debt_minutes,
+                at: review.created_at,
+            });
+        }
+    }
+
+    const contributors = response.contributors.map((contributor) => {
+
+        const measured = (contributor.pull_request_numbers ?? [])
+            .map((number) => minutesByPullRequest.get(number))
+            .filter((entry): entry is { minutes: number; at: string } => entry !== undefined);
+
+        if (measured.length === 0) {
+            return contributor;
+        }
+
+        return {
+            ...contributor,
+            debt: {
+                score: measured.reduce((total, entry) => total + entry.minutes, 0),
+                status: "available" as const,
+                // When this person's debt was last recalculated, not when
+                // they opened the pull request.
+                introduced_at: measured
+                    .map((entry) => entry.at)
+                    .reduce((latest, at) => (at > latest ? at : latest)),
+            },
+        };
+    });
+
+    return {
+        ...response,
+        contributors,
+        // The page prints this, so it must say which it is rather than
+        // leaving a blank column to be read as "no debt".
+        debt_source: "technical-debt-service",
+    };
+}
+
 function params<K extends string>(req: Request, ...names: K[]): Record<K, string> {
     const result = {} as Record<K, string>;
     for (const name of names) {
